@@ -1,0 +1,103 @@
+//Сохранение изменения истории прибора
+//Событие до изменения
+AddEventHandler("iblock", "OnBeforeIBlockElementUpdate", "GetStatus");
+function GetStatus(&$arFields){
+	if(intval($arFields["IBLOCK_ID"])===1){
+		$itemElement = CIBlockElement::GetByID($arFields["ID"])->Fetch();
+		$db_props = CIBlockElement::GetProperty(1, $arFields["ID"], "sort", "asc", array());
+		$PROPS = array();
+		while($ar_props = $db_props->GetNext()){
+			if(!empty($ar_props['VALUE_ENUM'])){
+				$PROPS[$ar_props['CODE']] = $ar_props['VALUE_ENUM'];
+			} else{
+				$PROPS[$ar_props['CODE']] = $ar_props['VALUE'];
+			}
+
+		}
+		$status=$PROPS['STATUS'];
+		if(trim($PROPS['OTVETSTVENNY'])!==""){
+			$responsible=trim($PROPS['OTVETSTVENNY']);
+		} else {
+			$responsible=trim($PROPS['RESPONSIBLE']);
+		}
+		$itemSection = CIBlockSection::GetByID($itemElement["IBLOCK_SECTION_ID"])->Fetch();
+		$location=$itemSection['NAME'];
+		$arFields["location"]=$location;
+		$arFields["status"]=$status;
+		$arFields["responsible"]=$responsible;
+
+
+	}
+}
+
+//Событие после изменения
+AddEventHandler("iblock", "OnAfterIBlockElementUpdate", "AddRrecordingStatus");
+	use Bitrix\Main\Loader,
+		Bitrix\Highloadblock as HL,
+		Bitrix\Main\Entity;
+
+	Loader::includeModule("highloadblock"); 
+	function AddRrecordingStatus(&$arFields){
+		if(intval($arFields["IBLOCK_ID"])===1){
+			$itemElement = CIBlockElement::GetByID($arFields["ID"])->Fetch();
+			$db_props = CIBlockElement::GetProperty(1, $arFields["ID"], "sort", "asc", array());
+			$PROPS = array();
+			while($ar_props = $db_props->GetNext()){
+				if(!empty($ar_props['VALUE_ENUM'])){
+					$PROPS[$ar_props['CODE']] = $ar_props['VALUE_ENUM'];
+				} else{
+					$PROPS[$ar_props['CODE']] = $ar_props['VALUE'];
+				}
+
+			}
+
+			$status=$arFields["status"];
+			$responsible=$arFields["responsible"];
+			$location=$arFields["location"];
+			$new_status=trim($PROPS['STATUS']);
+			if(trim($PROPS['OTVETSTVENNY'])!==""){
+				$new_responsible=trim($PROPS['OTVETSTVENNY']);
+			} else {
+				$new_responsible=trim($PROPS['RESPONSIBLE']);
+			}
+			$itemSection = CIBlockSection::GetByID($itemElement["IBLOCK_SECTION_ID"])->Fetch();
+			$new_location=$itemSection['NAME'];
+			$changed=$itemElement["MODIFIED_BY"];
+			if(($new_status!=$status)||($new_responsible!=$responsible)||($new_location!=$location)){
+				$new_status=($new_status===$status)?"":$new_status;
+				$new_responsible=($new_responsible===$responsible)?"":$new_responsible;
+				$new_location=($new_location===$location)?"":$new_location;
+				$hb_ID=9;
+				$hlblock = HL\HighloadBlockTable::getById($hb_ID)->fetch(); //где ID - id highloadblock блока в который будем добавлять элементы
+				$entity = HL\HighloadBlockTable::compileEntity($hlblock); 
+				$entity_data_class = $entity->getDataClass(); 
+				$date=date('d.m.Y H:i:s');
+				$Status=($new_status==="")?"":$status;
+				$Responsible=($new_responsible==="")?"":$responsible;
+				$Location=($new_location==="")?"":$location;
+				//Массив добавляемых параметров
+				$data = array(
+					"UF_NEW_LOCATION"=>$new_location,
+					"UF_NEW_RESPONSIBLE"=>$new_responsible,
+					"UF_NEW_MEASURING_STATUS"=>$new_status,
+					"UF_LOCATION"=>$Location,
+					"UF_RESPONSIBLE"=>$Responsible,
+					"UF_MEASURING_STATUS"=>$Status,
+					"UF_FULL_DESCRIPTION" =>'',
+					"UF_DESCRIPTION"=>'',
+					"UF_ID_MANAGER"=> $changed,
+					"UF_DATE_CHANGE" =>$date,
+					"UF_ID_MEASURING"=>$arFields["ID"],
+					"UF_XML_ID"=>'',
+				);
+
+				$result = $entity_data_class::add($data);
+
+				if ($result->isSuccess()) {
+					echo 'успешно добавлен';
+				} else {
+				echo 'Ошибка: ' . implode(', ', $otvet->getErrors()) . "";
+				}
+			}
+		}
+	}
