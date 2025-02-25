@@ -15,11 +15,8 @@ function GetStatus(&$arFields){
 
 		}
 		$status=$PROPS['STATUS'];
-		if(trim($PROPS['OTVETSTVENNY'])!==""){
-			$responsible=trim($PROPS['OTVETSTVENNY']);
-		} else {
-			$responsible=trim($PROPS['RESPONSIBLE']);
-		}
+		$responsible=trim($PROPS['RESPONSIBLE']);
+		
 		$itemSection = CIBlockSection::GetByID($itemElement["IBLOCK_SECTION_ID"])->Fetch();
 		$location=$itemSection['NAME'];
 		$arFields["location"]=$location;
