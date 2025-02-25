@@ -52,11 +52,8 @@ AddEventHandler("iblock", "OnAfterIBlockElementUpdate", "AddRrecordingStatus");
 			$responsible=$arFields["responsible"];
 			$location=$arFields["location"];
 			$new_status=trim($PROPS['STATUS']);
-			if(trim($PROPS['OTVETSTVENNY'])!==""){
-				$new_responsible=trim($PROPS['OTVETSTVENNY']);
-			} else {
-				$new_responsible=trim($PROPS['RESPONSIBLE']);
-			}
+			$new_responsible=trim($PROPS['RESPONSIBLE']);
+			
 			$itemSection = CIBlockSection::GetByID($itemElement["IBLOCK_SECTION_ID"])->Fetch();
 			$new_location=$itemSection['NAME'];
 			$changed=$itemElement["MODIFIED_BY"];
